@@ -1,7 +1,7 @@
 import requests
+from concurrent.futures import ThreadPoolExecutor
 
 BASE_URL = "https://ddc.chrisdonahue.com/choreograph"
-
 class Levels:
     beginner = "Beginner"
     easy = "Easy"
@@ -9,32 +9,53 @@ class Levels:
     hard = "Hard"
     challenge = "Challenge"
 
-def send(diff_coarse):
+def get_sm(song, artist, diff_coarse):
     data = {
-        "song_artist": "Sia",
-        "song_title": "Cheap Thrills",
+        "song_artist": artist,
+        "song_title": song,
         "diff_coarse": diff_coarse,
     }
     files = {"audio_file": ("file.ogg", open("work/file.ogg", "rb"), "audio/ogg")}
     
+    print(f"Start DDC downloading: {diff_coarse}")
     with requests.post(BASE_URL, data=data, files=files, stream=True) as response:
-        print("Status:", response.status_code)
-
         response.raise_for_status()
-
-        with open(f"work/{diff_coarse}.zip", "wb") as f:
+        name = f"work/{diff_coarse}.zip"
+        with open(name, "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
-        print("ZIP salvo como resultado.zip 🎉")
+        print(f"End DDC download: {diff_coarse}")
 
 
-def ddc():
-    for level in (
+def ddc(song, artist):
+    with ThreadPoolExecutor() as executor:
+        futures = []
+        for level in (
         Levels.beginner,
         Levels.easy,
         Levels.medium,
         Levels.hard,
         Levels.challenge,
     ):
-        send(level)
+            futures.append(
+                executor.submit(
+                get_sm,
+                song,
+                artist, 
+                level
+                )
+            )
+
+        [future.result() for future in futures]
+            
+    
+
+
+
+
+
+
+
+
+  

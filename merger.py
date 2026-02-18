@@ -1,5 +1,4 @@
 import re
-import sys
 import zipfile
 from pathlib import Path
 
@@ -22,18 +21,19 @@ def get_difficulty(notes_block):
     return "Unknown"
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("❌ Use: python merge_sm.py caminho/da/pasta")
-        return
+def remove_zips():
+    folder = Path("work")
 
-    input_dir = Path(sys.argv[1])
+    for file in folder.glob("*.zip"):
+        file.unlink()
+
+
+def merger():
+    input_dir = Path("work")
 
     if not input_dir.exists():
         print("❌ Pasta não encontrada")
         return
-    
-    
 
     zip_files = list(input_dir.rglob("*.zip"))
 
@@ -47,20 +47,11 @@ def main():
     final_text = ""
 
     sm_texts = []
-    audio_extracted = False
-    audio_output = None
     for zip_path in zip_files:
         try:
             with zipfile.ZipFile(zip_path, "r") as zip_file:
                 for name in zip_file.namelist():
                     lower_name = name.lower()
-                    if not audio_extracted and (lower_name.endswith(".mp3") or lower_name.endswith(".ogg")):
-                        output_name = Path(name).name
-                        audio_output = input_dir / output_name
-                        with zip_file.open(name, "r") as audio_file:
-                            audio_output.write_bytes(audio_file.read())
-                        audio_extracted = True
-
                     if lower_name.endswith(".sm"):
                         with zip_file.open(name, "r") as sm_file:
                             sm_texts.append(sm_file.read().decode("utf-8"))
@@ -88,14 +79,11 @@ def main():
         final_text += block + "\n\n"
 
     output_file = input_dir / "merged.sm"
+    final_text = "#BACKGROUND:file.mp4;\n#BANNER:file.jpg;\n" + final_text
+    final_text = re.sub(
+        r"#MUSIC:.*?;", "#MUSIC:file.ogg;", final_text, flags=re.IGNORECASE
+    )
     output_file.write_text(final_text, encoding="utf-8")
+    remove_zips()
 
-    print(f"✅ Arquivo criado: {output_file}")
-    if audio_extracted:
-        print(f"✅ Áudio extraído: {audio_output}")
-    else:
-        print("⚠️ Nenhum arquivo .mp3 ou .ogg encontrado nos zips")
-
-
-if __name__ == "__main__":
-    main()
+    print(f"Arquivo criado: {output_file}")
