@@ -28,7 +28,7 @@ def remove_zips():
         file.unlink()
 
 
-def merger():
+def merger(has_video):
     input_dir = Path("work")
 
     if not input_dir.exists():
@@ -78,11 +78,12 @@ def merger():
     for block in merged_notes:
         final_text += block + "\n\n"
 
-    output_file = input_dir / "merged.sm"
-    final_text = "#BACKGROUND:file.mp4;\n#BANNER:file.jpg;\n" + final_text
+    output_format = "mp4" if has_video else "jpg"
+    final_text = f"#BACKGROUND:file.{output_format};\n#BANNER:file.jpg;\n" + final_text
     final_text = re.sub(
         r"#MUSIC:.*?;", "#MUSIC:file.ogg;", final_text, flags=re.IGNORECASE
     )
+    output_file = input_dir / "merged.sm"
     output_file.write_text(final_text, encoding="utf-8")
     remove_zips()
 
